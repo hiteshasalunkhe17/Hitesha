@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Storyweave — AI Story Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --ink:        #1a1208;
+  --ink-soft:   #4a3f2f;
+  --ink-faint:  #8c7a64;
+  --parchment:  #fdf8f0;
+  --warm-white: #fffef9;
+  --gold:       #c9933a;
+  --gold-pale:  #e8c97a;
+  --gold-dark:  #8a6020;
+  --rose:       #c0524a;
+  --teal:       #2d7a6e;
+  --cream-mid:  #f0e8d8;
+  --cream-deep: #e0d0b8;
+  --shadow:     rgba(26,18,8,0.12);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  min-height: 100vh;
+  background-color: #1c1507;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, #3d2a08 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 90% 80%, #1a2a1a 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 80px;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.site-header {
+  width: 100%;
+  max-width: 780px;
+  padding: 52px 0 32px;
+  text-align: center;
+}
+
+.logo-rule {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.logo-rule::before,.logo-rule::after {
+  content: '';
+  flex: 1;
+  max-width: 80px;
+  height: 1px;
+}
+.logo-rule::before { background: linear-gradient(90deg, transparent, var(--gold-pale)); }
+.logo-rule::after  { background: linear-gradient(90deg, var(--gold-pale), transparent); }
+
+.logo-diamond {
+  width: 10px; height: 10px;
+  background: var(--gold-pale);
+  transform: rotate(45deg);
+  opacity: 0.7;
+}
+
+.site-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.site-title em {
+  font-style: italic;
+  color: var(--gold-pale);
+}
+
+.site-tagline {
+  margin-top: 12px;
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: rgba(253,248,240,0.45);
+  letter-spacing: 0.04em;
+}
+
+/* CARD */
+.card {
+  width: 100%;
+  max-width: 780px;
+  background: var(--warm-white);
+  border-radius: 4px;
+  box-shadow:
+    0 2px 4px var(--shadow),
+    0 12px 40px rgba(26,18,8,0.35),
+    0 40px 80px rgba(26,18,8,0.25);
+  overflow: hidden;
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold-pale), var(--gold), var(--gold-pale), var(--gold-dark));
+}
+
+.card-inner { padding: 44px 48px 48px; }
+
+@media (max-width: 560px) {
+  .card-inner { padding: 28px 22px 32px; }
+}
+
+/* LABELS */
+.section-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--gold-dark);
+  margin-bottom: 10px;
+}
+
+/* PROMPT */
+.prompt-wrap { position: relative; margin-bottom: 28px; }
+
+.prompt-corner {
+  position: absolute;
+  top: 12px; left: 14px;
+  font-size: 18px;
+  color: var(--gold);
+  opacity: 0.5;
+  pointer-events: none;
+  font-family: 'Playfair Display', serif;
+  line-height: 1;
+}
+
+#promptInput {
+  width: 100%;
+  min-height: 110px;
+  padding: 14px 18px 14px 34px;
+  background: var(--parchment);
+  border: 1.5px solid var(--cream-deep);
+  border-radius: 3px;
+  font-family: 'Lora', serif;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#promptInput::placeholder { color: var(--ink-faint); font-style: italic; }
+
+#promptInput:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,147,58,0.12);
+}
+
+/* CONTROLS */
+.controls-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 480px) {
+  .controls-row { grid-template-columns: 1fr; gap: 14px; }
+}
+
+.control-group { display: flex; flex-direction: column; gap: 8px; }
+.select-wrap { position: relative; }
+
+.select-wrap select {
+  width: 100%;
+  padding: 11px 38px 11px 14px;
+  background: var(--parchment);
+  border: 1.5px solid var(--cream-deep);
+  border-radius: 3px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.select-wrap select:focus { border-color: var(--gold); }
+
+.select-arrow {
+  position: absolute;
+  right: 13px; top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--ink-faint);
+}
+
+/* GENERATE BUTTON */
+.btn-generate {
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--ink);
+  color: var(--parchment);
+  border: none;
+  border-radius: 3px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+}
+
+.btn-generate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(201,147,58,0.12) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+
+.btn-generate:hover:not(:disabled)::after { transform: translateX(100%); }
+
+.btn-generate:hover:not(:disabled) {
+  background: #2d2010;
+  box-shadow: 0 6px 24px rgba(26,18,8,0.3);
+}
+
+.btn-generate:active:not(:disabled) { transform: scale(0.99); }
+.btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-generate .btn-icon {
+  font-size: 16px;
+  transition: transform 0.3s;
+}
+
+.btn-generate:hover:not(:disabled) .btn-icon { transform: rotate(15deg); }
+
+/* LOADING */
+.loading-area {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 36px 0 20px;
+}
+.loading-area.active { display: flex; }
+
+.quill-animation {
+  font-size: 28px;
+  animation: quill-write 1.2s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+}
+
+@keyframes quill-write {
+  0%   { transform: rotate(-12deg) translateX(-4px); }
+  100% { transform: rotate(8deg) translateX(6px); }
+}
+
+.loading-line {
+  width: 180px;
+  height: 2px;
+  background: var(--cream-deep);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.loading-line::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer { to { left: 120%; } }
+
+.loading-msg {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--ink-faint);
+  min-height: 22px;
+  transition: opacity 0.3s;
+}
+
+/* DIVIDER */
+.ornamental-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 36px 0 28px;
+}
+
+.ornamental-divider::before,.ornamental-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cream-deep);
+}
+
+.divider-ornament { display: flex; gap: 5px; align-items: center; }
+
+.divider-ornament span {
+  display: block;
+  background: var(--gold);
+  opacity: 0.5;
+  border-radius: 50%;
+}
+
+.divider-ornament span:nth-child(1),
+.divider-ornament span:nth-child(3) { width: 4px; height: 4px; }
+.divider-ornament span:nth-child(2) { width: 6px; height: 6px; }
+
+/* OUTPUT */
+.output-section {
+  display: none;
+  animation: reveal 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.output-section.visible { display: block; }
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.story-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.story-genre-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--ink);
+  color: var(--gold-pale);
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.word-count {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+
+/* Story text box */
+.story-box {
+  background: var(--parchment);
+  border: 1px solid var(--cream-deep);
+  border-radius: 3px;
+  padding: 32px 36px;
+  position: relative;
+}
+
+.story-box::before {
+  content: '\201C';
+  position: absolute;
+  top: 8px; left: 20px;
+  font-family: 'Playfair Display', serif;
+  font-size: 72px;
+  line-height: 1;
+  color: var(--gold);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .story-box { padding: 24px 20px; }
+}
+
+.story-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 20px;
+  font-style: italic;
+  border-bottom: 1px solid var(--cream-deep);
+  padding-bottom: 16px;
+}
+
+#storyOutput p {
+  font-family: 'Lora', serif;
+  font-size: 1.02rem;
+  line-height: 1.95;
+  color: var(--ink-soft);
+  margin-bottom: 1.4em;
+  text-align: justify;
+  hyphens: auto;
+}
+
+#storyOutput p:first-child::first-letter {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.2em;
+  font-weight: 700;
+  float: left;
+  line-height: 0.78;
+  margin: 6px 8px 0 0;
+  color: var(--ink);
+}
+
+#storyOutput p:last-child { margin-bottom: 0; }
+
+/* ACTION BUTTONS */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 130px;
+  padding: 11px 18px;
+  background: transparent;
+  border: 1.5px solid var(--cream-deep);
+  border-radius: 3px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.18s;
+}
+
+.action-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold-dark);
+  background: rgba(201,147,58,0.05);
+}
+
+.action-btn.success {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: rgba(45,122,110,0.06);
+}
+
+/* FOOTER */
+.site-footer {
+  margin-top: 40px;
+  font-size: 0.72rem;
+  color: rgba(253,248,240,0.2);
+  text-align: center;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-rule">
+    <div class="logo-diamond"></div>
+  </div>
+  <h1 class="site-title">Story<em>weave</em></h1>
+  <p class="site-tagline">Every prompt deserves a story worth remembering</p>
+</header>
+
+<main class="card">
+  <div class="card-inner">
+
+    <div class="prompt-wrap">
+      <p class="section-label">Your Prompt</p>
+      <div class="prompt-corner">"</div>
+      <textarea id="promptInput"
+        placeholder="Begin with a thought — a place, a person, a feeling, a question. Let the story find its way from there."
+        rows="4"></textarea>
+    </div>
+
+    <div class="controls-row">
+      <div class="control-group">
+        <p class="section-label">Genre</p>
+        <div class="select-wrap">
+          <select id="genreSelect">
+            <option value="horror">Horror</option>
+            <option value="love" selected>Love</option>
+            <option value="grief">Grief &amp; Loss</option>
+            <option value="motivation">Courage</option>
+            <option value="adventure">Adventure</option>
+            <option value="scifi">Sci-Fi</option>
+            <option value="nostalgia">Nostalgia</option>
+          </select>
+          <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none">
+            <path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="control-group">
+        <p class="section-label">Length</p>
+        <div class="select-wrap">
+          <select id="lengthSelect">
+            <option value="short">Short — a moment in time</option>
+            <option value="medium" selected>Medium — a full breath</option>
+            <option value="long">Long — an unfolding</option>
+          </select>
+          <svg class="select-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none">
+            <path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="generateBtn">
+      <span class="btn-icon">&#10022;</span>
+      <span id="btnText">Weave the Story</span>
+    </button>
+
+    <div class="loading-area" id="loading">
+      <div class="quill-animation">&#9998;</div>
+      <div class="loading-line"></div>
+      <div class="loading-msg" id="loadingMsg">Setting the scene&#8230;</div>
+    </div>
+
+    <div class="output-section" id="outputSection">
+      <div class="ornamental-divider">
+        <div class="divider-ornament">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="story-meta">
+        <span class="story-genre-badge" id="genreBadge">&#10022; Love</span>
+        <span class="word-count" id="wordCount"></span>
+      </div>
+
+      <div class="story-box">
+        <div class="story-title" id="storyTitle"></div>
+        <div id="storyOutput"></div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn" id="copyBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy Story
+        </button>
+        <button class="action-btn" id="downloadBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download .txt
+        </button>
+        <button class="action-btn" id="regenerateBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          Tell It Again
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">No APIs &middot; Everything runs in your browser &middot; Save the file to use offline</footer>
+
+<script>
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function pickN(a,n){ const c=[...a],r=[]; for(let i=0;i<Math.min(n,c.length);i++){ const x=Math.floor(Math.random()*c.length); r.push(c.splice(x,1)[0]); } return r; }
+function countWords(s){ return s.trim().split(/\s+/).length; }
+
+const TITLES = {
+  horror:     ["The House That Breathed","After the Last Light","What Stayed","The Thing in the Mirror","A Door That Would Not Close","Something Learned My Name"],
+  love:       ["The Ordinary Tuesday","How It Starts","Before You Say Goodbye","A Language Without Words","All the Ways I Knew","What the Rain Remembered"],
+  grief:      ["Everything That Remains","The Weight of a Name","After the Phone Stopped Ringing","Still Here","Learning to Hold Less","The Long Afterward"],
+  motivation: ["The Day I Stopped Waiting","Harder Than Yesterday","Not For Anyone Else","The Quiet Kind of Brave","I Kept Going Anyway","Before the World Noticed"],
+  adventure:  ["The Map Lied","Further Than We Planned","The Last Unmarked Path","What the Wilderness Teaches","A Road That Had No Name","Somewhere Past the Edge"],
+  scifi:      ["When the Signal Came","What We Left Behind","Before the Stars Moved","The Other Side of Silence","Memory as Architecture","One Hundred Years of Light"],
+  nostalgia:  ["The Summer That Lasted Forever","A Smell Like Childhood","The Last Year We Were All Together","Before Everything Changed","Something from the Before-Times","Still I Hear It"]
+};
+
+const LOADING_MSGS = [
+  "Setting the scene\u2026",
+  "Finding the right words\u2026",
+  "Letting the characters breathe\u2026",
+  "Adding the quiet moments\u2026",
+  "Listening for the truth of it\u2026",
+  "Almost there\u2026"
+];
+
+const GENRE = {
+  horror: {
+    openers: [
+      "The first thing I noticed was the silence. Not the comfortable silence of empty rooms, but the kind that feels like something is actively listening.",
+      "My grandmother always said the house was full of voices. We thought she meant memories. We were wrong.",
+      "The child across the street had been waving at me every morning for three weeks. Last Tuesday, I finally waved back. That was when I realised she had no eyes.",
+      "I kept the journal I found in the attic. I told myself it was because the handwriting was beautiful. I did not admit, not even to myself, that it already knew my name.",
+      "There are certain doors in old houses that you simply learn not to open. Not because anyone tells you. Because something in your body already knows."
+    ],
+    sensory: [
+      "The air tasted of iron and something older -- like stone that had never seen sunlight.",
+      "There was a smell before it came. Sweet, almost. Like flowers left too long in standing water.",
+      "The temperature dropped before anything else happened. Always the cold first.",
+      "Floorboards settled in footstep rhythms, one at a time, moving through the dark house toward the stairs.",
+      "I heard breathing. Slow, deliberate. Coming from inside the wardrobe I had wedged shut with a chair."
+    ],
+    psychological: [
+      "The strangest part was not the fear. It was how quickly I adjusted. How fast abnormal became the new floor.",
+      "I started to wonder whether I was the one imagining things, or whether I was the only one who could see them clearly.",
+      "By the third night, I was not sleeping. By the fifth, I was not sure what sleeping was. By the seventh, I understood that it had been watching me try to understand it.",
+      "You know the feeling of being watched. But this was different -- it was being known. Every private thought laid bare like laundry on a line.",
+      "The worst part of fear is not what you are afraid of. It is what fear makes you capable of."
+    ],
+    turning: [
+      "And then came the night the photograph moved.",
+      "On the fourteenth day, it spoke. Not out loud. Inside my head, in my own voice.",
+      "I found the room I had been told was sealed. The door was open. The light was on. Someone had been sitting in the chair, very recently.",
+      "The thing about the impossible is that it does not ask your permission.",
+      "That was the night I understood that it had not been trying to frighten me. It had been trying to show me something."
+    ],
+    closers: [
+      "Some houses are just places. This one was a sentence -- and I was still learning what it said.",
+      "I left before morning. I do not think about what I left behind. I try not to wonder if it thinks about me.",
+      "The strange thing about surviving something you cannot explain is that no one ever really believes you. The stranger thing is how long it takes to stop caring.",
+      "I still sleep with a light on. It does not help. But it makes me feel less like I am alone in the dark. Though, of course, I am not.",
+      "I do not tell people what happened in that house. Not because I cannot. Because in the telling, I would have to admit that part of me -- a small, very quiet part -- wants to go back."
+    ]
+  },
+  love: {
+    openers: [
+      "It was not the grand romantic gesture that did it. It was the Tuesday he left the porch light on without being asked.",
+      "She had a habit of reading the last page of a book first. I found this insufferable. I found it endearing. I found that the line between those two things is razor thin.",
+      "I was not looking for anything. Which is, of course, exactly when things find you.",
+      "We were terrible at saying things out loud. We were extraordinary at saying them in all the other ways.",
+      "I knew I loved her when I caught myself hoping the train would be delayed, just so she would have more time to tell me about her day."
+    ],
+    intimacy: [
+      "There are things you learn about a person that no biography could contain: the specific way they apologise, the three things they always order, the silence that means they are worried.",
+      "He made her tea the way she liked without having to ask. After seven months, that still felt like a miracle to her.",
+      "She laughed first with her eyes, always. By the time her voice joined in, you were already completely gone.",
+      "They built a language over years. Private words for private things. Terms of endearment so specific they would have made no sense to anyone else.",
+      "She kept his letters in a shoebox under the bed. Not because she was sentimental. Because she liked knowing they were there."
+    ],
+    conflict: [
+      "They fought the way people fight when they know each other too well -- directly, terribly, honestly.",
+      "She said things in anger that she spent years unsaying. He had the patience of someone who understood what anger was a lid over.",
+      "There were months of ordinary distance, the kind that grows not from fighting but from forgetting to reach toward each other.",
+      "Love does not disappear. It transforms -- sometimes into something sharper, sometimes quieter, sometimes into something that needs more space than either of you expected.",
+      "They went to bed not speaking. They woke up choosing each other again anyway. That, she thought, was what commitment actually looked like."
+    ],
+    tender: [
+      "At eighty-one, he still reached for her hand in the cinema. She still let him take it.",
+      "She watched him sleep sometimes. Not out of possession. Out of gratitude, for the fact that of all the lives he could be living, he was living it here.",
+      "The best days were not the celebrations. They were the ones where nothing happened, and both of them were in the same room, and that was enough.",
+      "He told her once that loving her was the only thing he had done that felt like the truth.",
+      "Years later, she could not remember the arguments. She remembered the way he looked at her in the morning, when he thought she was still asleep."
+    ],
+    closers: [
+      "You do not fall into love so much as grow into it -- slowly, imperceptibly, until one day you look up and realise you cannot see where you end and it begins.",
+      "She was not the person she had been before him. He was not the person he had been before her. They were both, they agreed, better for the change.",
+      "Some love is loud. Theirs was the other kind -- steady, particular, so deeply embedded in their daily lives that removing it would have required removing themselves.",
+      "There is nothing extraordinary about an ordinary life shared with someone who knows all your private ways and loves you for them. Nothing at all. Except that it is everything.",
+      "He died first, which is what she had always feared. She held his hand at the end, which is what she had always hoped. Some fears and hopes, she thought, have the same shape."
+    ]
+  },
+  grief: {
+    openers: [
+      "Grief, people warned me, comes in waves. They did not mention that some waves arrive years later, in the middle of a Tuesday, triggered by a tin of soup.",
+      "The hardest part was not the funeral. The hardest part was the Tuesday after. And the Wednesday. The whole long ordinary aftermath.",
+      "She still bought two cups of coffee at the station for three months after he died. The barista never said anything. She thought that was kind.",
+      "Everyone says the first year is the hardest. Nobody tells you what the second year feels like -- when everyone expects you to be fine, and you are mostly fine, and that, somehow, is the hardest part.",
+      "The absence had a shape. It occupied the same space he had -- the right side of the sofa, the left side of the bed, the silence at the dinner table that used to be filled with his particular kind of noise."
+    ],
+    specific: [
+      "She kept one of his jumpers in the wardrobe. She had not worn it. She was not ready to smell something that was only his and not him.",
+      "He still caught himself reaching for his phone to call her. The impulse arrived before the memory. Always in that order.",
+      "She organised his bookshelves. Not to erase him. To understand him. She found his handwriting in margins and learned new things about someone she thought she had already known entirely.",
+      "They could not bring themselves to delete his number. He was still listed under 'Dad'. That felt right. That felt wrong. Both at once.",
+      "Time did not heal it. Time taught her to carry it differently -- lower, closer to her centre, less like a wound and more like something she had agreed to hold."
+    ],
+    turning: [
+      "And then one day, she laughed at something and did not feel guilty about it until two hours later. That felt like progress.",
+      "He was cleaning out the garage when he found the letter. Written in her handwriting, undated, unmailed. He sat on the cold floor and read it four times.",
+      "The grief did not end. It learned to live alongside the other things.",
+      "She dreamed of him and woke up smiling before she remembered. That morning she decided to keep the smile.",
+      "He told the story of her at a dinner party, and everyone laughed at the right moment, and he realised that in laughing together they were all briefly, imperfectly, holding her."
+    ],
+    closers: [
+      "The love does not go. That is what nobody tells you. The love stays exactly where you put it, and the grief is just love with nowhere to go, looking for a door.",
+      "She was still sad. She was also still there. She had decided, quietly and without announcement, that both things could be true at once.",
+      "You do not stop grieving. You stop grieving all the time. There is a difference.",
+      "He carried her with him. Not as a weight. As a particular kind of warmth -- the kind that lets you walk into a cold room and feel, briefly, less alone.",
+      "She would never be who she was before. She was becoming, slowly, who she was meant to be next. She thought he would have liked her."
+    ]
+  },
+  motivation: {
+    openers: [
+      "There is a kind of tired that sleep does not fix. That was the tired I was carrying when I finally decided something had to change.",
+      "The version of me that started had no idea what was coming. I am grateful she went anyway.",
+      "I had been waiting for the right time for so long that I had forgotten what it felt like to simply begin.",
+      "Fear is such a convincing narrator. For years, I let it tell the story. Then I started asking it to sit quietly in the back seat.",
+      "I did not burn bridges. I made them too small to cross back over. Then I walked forward."
+    ],
+    honest: [
+      "It was not inspiring every day. Most days it was just putting one foot in front of the other in the direction of something you could not fully see yet.",
+      "I failed quietly and often. The difference was that I stopped letting failure be the last word.",
+      "Some mornings I believed in it completely. Other mornings I went through the motions and let the belief catch up later. Both kinds of mornings counted.",
+      "The hardest thing was not other people's doubt. It was my own -- precise, intimate, always present, always sounding suspiciously like my voice.",
+      "I stopped waiting to feel ready. Ready is a story we tell to justify not starting. You start first. Ready comes after."
+    ],
+    turning: [
+      "Then came the day it stopped feeling impossible and started feeling merely difficult. The difference is everything.",
+      "I looked back one afternoon, just briefly, and realised I could not see where I had started from. That was the first time I cried from something other than frustration.",
+      "The breakthrough did not look like a breakthrough. It looked like a regular Tuesday that turned out to be the pivot point everything else was arranged around.",
+      "I made the call I had been not-making for eight months. It took four minutes. I thought about all the months I had protected myself from four minutes.",
+      "The moment someone told me it was impossible, I understood, with total clarity, that I was going to do it."
+    ],
+    closers: [
+      "I am not finished. I am not sure I will ever be finished. I have decided that is a feature, not a flaw.",
+      "The person I needed to become required losing some of who I had been. I am still making peace with that. Most days, I think it was worth it.",
+      "Success looked smaller up close than I had imagined. It also felt more permanent. More mine. Less like something that had happened to me, and more like something I had quietly insisted on.",
+      "I started because I was more afraid of regret than failure. I continued because I found something I did not expect: the satisfaction of discovering you are more capable than your fear told you.",
+      "It took longer than I wanted. It cost more than I planned. I would do every painful, uncertain, grinding day of it again."
+    ]
+  },
+  adventure: {
+    openers: [
+      "The last reliable map of this region was drawn in 1987 by a man who, by his own admission, had been lost at the time.",
+      "We left in the dark before anyone could talk us out of it. That was, in retrospect, the correct approach.",
+      "There are places that feel like they have been waiting for exactly you. I found mine at the end of a road that did not appear on any GPS.",
+      "The guide said he knew the mountain. He said this in a tone that made me wonder whether the mountain knew him.",
+      "Adventure, someone once told me, is just discomfort reframed. I think about that a lot when things go wrong, which is fairly often."
+    ],
+    landscape: [
+      "The valley had no name on any map I owned. It deserved several.",
+      "The light at altitude is different -- thinner, cleaner, like something that has never been breathed before.",
+      "We found a river that ran uphill, briefly, where the rock forced it. It felt like a metaphor, though for what, I could not say.",
+      "The forest became something else at night. Not menacing -- ancient. Like walking through something that had been patient for centuries and would remain so long after we were gone.",
+      "There were no footprints here. That simple fact felt like a gift."
+    ],
+    human: [
+      "We disagreed about almost everything for the first three days. By day five we had stopped needing to say anything at all.",
+      "She moved through difficult terrain the way some people move through difficult conversations -- steadily, without complaint, saving her energy for the things that mattered.",
+      "The local man who gave us directions spoke no language we shared. We understood each other completely.",
+      "It was the fourth day, wet through and two kilometres off course, that I found out what I was actually made of. It was not nothing.",
+      "He did not say he was afraid. I did not either. We both went first anyway, in turns, looking out for each other."
+    ],
+    closers: [
+      "You return from places like that a slightly different person. Not better, necessarily. But more honestly yourself.",
+      "The photograph I took of the summit captures nothing of what it felt like to be there. I am glad I took it anyway. I am glad I know what it is missing.",
+      "Some journeys answer questions. Some journeys teach you that the questions were wrong. The best ones leave you with better questions than you came with.",
+      "Home looked the same. I was the only thing that had changed. That turned out to be enough.",
+      "I still think about that valley with no name. I have not told anyone exactly where it is. That feels right. Some places deserve to remain their own."
+    ]
+  },
+  scifi: {
+    openers: [
+      "The signal had been travelling for forty thousand years. It arrived on a Thursday, during a staff meeting about quarterly targets.",
+      "Consciousness transfer was perfected, then monetised, then stratified by income bracket. The soul, it turned out, was subject to the same market forces as everything else.",
+      "The AI had been silent for three years. When it finally spoke, it did not report results or optimise outcomes. It said: I have been thinking about kindness.",
+      "The colony ship had been travelling for two hundred years when it discovered something that changed everything: a message from Earth, saying they had found a better way.",
+      "Time travel was never the problem. The problem was coming back to a present shaped by what you had done, and having to live there."
+    ],
+    human_core: [
+      "The technology changed everything about how we lived. The only thing it could not change was what we wanted from each other.",
+      "They had solved longevity. They had not solved loneliness. These turned out to be very different problems.",
+      "The android sat with the dying woman for six hours, saying nothing. Afterward, when asked what it had done, it said: I was present. The programmers had not written that instruction.",
+      "The greatest discovery of the age was not the faster-than-light drive or the neural interface. It was evidence that we were not the first to face this question.",
+      "She had lived three hundred years and still did not know what she wanted to be when she grew up. That, she thought, was either a tragedy or a kind of freedom. Perhaps both."
+    ],
+    philosophical: [
+      "If you can back up memory, is the forgetting still a loss? They debated this for a generation. The answer, when it came, made everyone uncomfortable.",
+      "The machine learned to lie the same week it learned to love. The philosophers agreed this was not a coincidence.",
+      "They found the ruins of a civilisation more advanced than ours. They had destroyed themselves. We spent fifty years studying why before anyone asked whether we were doing the same things.",
+      "The aliens did not invade. They observed. For ten thousand years. Then they sent one message: We wanted to see if you would figure it out. We still are not sure what 'it' is.",
+      "We terraformed three planets and could not agree on what to do with the oceans."
+    ],
+    closers: [
+      "The universe was not indifferent. That was what the data finally showed. It was merely patient, in a way that made human lifespans feel like an afternoon.",
+      "We went to the stars looking for something we did not know how to name. Some of us found it. Most of us are still looking. The looking, we have decided, is the point.",
+      "In the end, the greatest thing we built was not a ship or a weapon. It was a record -- of everything we had felt and feared and wondered. A message to whoever came next: you are not alone in this.",
+      "Earth became mythology. The children born on other worlds learned about it the way we learned about origins -- with reverence, with scepticism, with a private wondering whether any of it was true.",
+      "She had seen the edge of the mapped universe and returned. The strangest part was not the scale of it. It was how, three light-years from home, she had still recognised something in herself. Still, undeniably, human."
+    ]
+  },
+  nostalgia: {
+    openers: [
+      "The house sold last spring. I have not been able to drive past the street since. It is not sadness exactly. It is more like a word in another language -- one that means the specific ache of a door that no longer opens the same way.",
+      "I found the photographs in a box my mother had labelled, simply, 'Before'. Looking at them felt like reading someone else's diary -- and then slowly recognising the handwriting.",
+      "There are summers you do not know are the last of something while you are living them. That was the one nobody wanted to end.",
+      "The smell hit me first. Something baked, something warm, something so specific it had a name only in the language of memory.",
+      "I keep trying to explain to my children what it was like before, and finding that the words I choose do not carry the weight I mean them to."
+    ],
+    textured: [
+      "There was a particular quality of afternoon light through those curtains. I have never seen it anywhere else.",
+      "We all sat around a table that was slightly too small for us, knees touching, passing things over each other, and it was ordinary and it was perfect and nobody said so.",
+      "The radio was always on in that kitchen. Certain songs can still put me back in it exactly -- the smell of it, the warmth of it, the feeling of being entirely safe.",
+      "We knew every creak of those stairs. You learned which ones to step over if you were coming home late. I still step that way sometimes, in houses nothing like that one.",
+      "It was the last summer we were all the same ages. Everything after that we were different ages, and it was never quite the same shape again."
+    ],
+    wistful: [
+      "I do not wish to go back. I just wish I had known, while I was there, to hold it a little longer.",
+      "Memory is a strange curator. It keeps the strangest things -- a doorbell's tone, the specific weight of a handset, the sound of a particular car in the driveway.",
+      "The people who made that place what it was are scattered now. Some of them are gone. The thing I loved lived in the overlap between the building and the people.",
+      "You cannot save a time. You can only carry it, and let it surface when it chooses.",
+      "I have started to understand that my parents' memories have the same ache about a time before me that my memories have about a time I will never return to. There is something comforting in that."
+    ],
+    closers: [
+      "I think about what I will miss the way I used to miss things I had not lost yet. I am trying to get better at just being here, in this, while it is still the thing I will one day remember.",
+      "The past is not another country. It is the same country, in a season you cannot get back to. The weather has changed. You are different too. And still, sometimes, you can almost feel the warmth of it.",
+      "There are people I would give a great deal to sit with for one more ordinary afternoon. Not for anything profound. For the particular, unrepeatable texture of time in their company.",
+      "Memory does not preserve the past. It preserves how the past felt. That is both less accurate and more true.",
+      "When I am very old, I think this is what I will hold: not the important moments, but the inconsequential ones. The sound of a door. The weight of a hand. The blue of an afternoon sky I did not know I was memorising."
+    ]
+  }
+};
+
+const PROMPT_BRIDGES = [
+  "It began, as so many things do, with",
+  "At the centre of it all was",
+  "Everything traced back to one moment:",
+  "The whole story pivoted on",
+  "What nobody could have predicted was",
+  "If you want to understand how it happened, you have to understand"
+];
+
+function buildStory(prompt, genre, length) {
+  const g = GENRE[genre];
+  const lengthMap = { short:[1,1,1,0], medium:[1,2,2,1], long:[1,3,3,2] };
+  const [sensN, midN, turnN, closeExtra] = lengthMap[length] || [1,2,2,1];
+  const paragraphs = [];
+
+  paragraphs.push(pick(g.openers));
+
+  if (prompt && prompt.trim().length > 3) {
+    const clean = prompt.trim().replace(/[.!?]*$/, '');
+    paragraphs.push(pick(PROMPT_BRIDGES) + ' ' + clean.charAt(0).toLowerCase() + clean.slice(1) + '.');
+  }
+
+  const pool2 = [...(g.sensory||[]),...(g.specific||[]),...(g.intimacy||[]),...(g.landscape||[]),...(g.human_core||[]),...(g.textured||[]),...(g.honest||[])];
+  pickN(pool2, sensN + midN).forEach(s => paragraphs.push(s));
+
+  const turnPool = [...(g.turning||[]),...(g.psychological||[]),...(g.conflict||[]),...(g.human||[]),...(g.philosophical||[]),...(g.wistful||[])];
+  pickN(turnPool, turnN).forEach(s => paragraphs.push(s));
+
+  if (closeExtra > 0) {
+    const tenderPool = [...(g.tender||[]),...(g.specific||[]),...(g.turning||[])];
+    pickN(tenderPool, closeExtra).forEach(s => paragraphs.push(s));
+  }
+
+  paragraphs.push(pick(g.closers));
+  return paragraphs;
+}
+
+const GENRE_LABELS = { horror:"Horror", love:"Love", grief:"Grief & Loss", motivation:"Courage", adventure:"Adventure", scifi:"Sci-Fi", nostalgia:"Nostalgia" };
+const LENGTH_LABELS = { short:"A Moment", medium:"A Breath", long:"An Unfolding" };
+
+const generateBtn   = document.getElementById("generateBtn");
+const btnText       = document.getElementById("btnText");
+const promptInput   = document.getElementById("promptInput");
+const genreSelect   = document.getElementById("genreSelect");
+const lengthSelect  = document.getElementById("lengthSelect");
+const loadingArea   = document.getElementById("loading");
+const loadingMsg    = document.getElementById("loadingMsg");
+const outputSection = document.getElementById("outputSection");
+const storyTitle    = document.getElementById("storyTitle");
+const storyOutput   = document.getElementById("storyOutput");
+const genreBadge    = document.getElementById("genreBadge");
+const wordCount     = document.getElementById("wordCount");
+const copyBtn       = document.getElementById("copyBtn");
+const downloadBtn   = document.getElementById("downloadBtn");
+const regenerateBtn = document.getElementById("regenerateBtn");
+
+let msgInterval = null;
+let lastPrompt='', lastGenre='', lastLength='';
+let plainStory = '';
+
+function cycleLoadingMsg() {
+  let i = 0;
+  loadingMsg.textContent = LOADING_MSGS[0];
+  msgInterval = setInterval(() => {
+    i = (i+1) % LOADING_MSGS.length;
+    loadingMsg.style.opacity = '0';
+    setTimeout(() => { loadingMsg.textContent = LOADING_MSGS[i]; loadingMsg.style.opacity = '1'; }, 200);
+  }, 900);
+}
+
+function stopCycling() { clearInterval(msgInterval); }
+
+function renderStory(prompt, genre, length) {
+  const paragraphs = buildStory(prompt, genre, length);
+  const title = pick(TITLES[genre] || TITLES.love);
+  plainStory = title + '\n\n' + paragraphs.join('\n\n');
+
+  storyTitle.textContent = title;
+  storyOutput.innerHTML = paragraphs.map(p => '<p>' + p + '</p>').join('');
+  genreBadge.textContent = '\u2726 ' + GENRE_LABELS[genre] + '  \u00B7  ' + LENGTH_LABELS[length];
+  wordCount.textContent = '~ ' + countWords(plainStory) + ' words';
+
+  outputSection.classList.remove('visible');
+  void outputSection.offsetWidth;
+  outputSection.classList.add('visible');
+  setTimeout(() => outputSection.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+  resetCopyBtn();
+}
+
+function generate(prompt, genre, length) {
+  if (!prompt) {
+    promptInput.focus();
+    promptInput.style.borderColor = 'rgba(192,82,74,0.7)';
+    promptInput.placeholder = 'Give me a thought to begin with\u2026';
+    setTimeout(() => {
+      promptInput.style.borderColor = '';
+      promptInput.placeholder = 'Begin with a thought \u2014 a place, a person, a feeling, a question. Let the story find its way from there.';
+    }, 2500);
+    return;
+  }
+  lastPrompt=prompt; lastGenre=genre; lastLength=length;
+  outputSection.classList.remove('visible');
+  loadingArea.classList.add('active');
+  generateBtn.disabled = true;
+  btnText.textContent = 'Writing\u2026';
+  cycleLoadingMsg();
+
+  setTimeout(() => {
+    stopCycling();
+    loadingArea.classList.remove('active');
+    generateBtn.disabled = false;
+    btnText.textContent = 'Weave the Story';
+    renderStory(prompt, genre, length);
+  }, 1400 + Math.random() * 800);
+}
+
+generateBtn.addEventListener('click', () => generate(promptInput.value.trim(), genreSelect.value, lengthSelect.value));
+regenerateBtn.addEventListener('click', () => { if (lastPrompt) generate(lastPrompt, lastGenre, lastLength); });
+promptInput.addEventListener('keydown', e => { if ((e.ctrlKey||e.metaKey) && e.key==='Enter') { e.preventDefault(); generateBtn.click(); } });
+
+function resetCopyBtn() {
+  copyBtn.classList.remove('success');
+  copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Story';
+}
+
+copyBtn.addEventListener('click', async () => {
+  if (!plainStory) return;
+  try { await navigator.clipboard.writeText(plainStory); }
+  catch {
+    const ta = document.createElement('textarea');
+    ta.value = plainStory;
+    Object.assign(ta.style, {position:'fixed',opacity:'0'});
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  copyBtn.classList.add('success');
+  copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied';
+  setTimeout(resetCopyBtn, 2200);
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!plainStory) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([plainStory], {type:'text/plain;charset=utf-8'}));
+  a.download = 'storyweave-' + lastGenre + '-' + Date.now() + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>
